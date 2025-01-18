@@ -315,30 +315,6 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     ln -s /usr/local/firmware/aw87xxx_acf_orangepi.bin /usr/lib/firmware/aw87xxx_acf_orangepi.bin && \
     ln -s /usr/local/firmware/aw87xxx_acf_airplus.bin /usr/lib/firmware/aw87xxx_acf_airplus.bin && \
     ln -s /usr/local/firmware/aw87xxx_acf_flip.bin /usr/lib/firmware/aw87xxx_acf_flip.bin && \
-    if [[ "${IMAGE_FLAVOR}" =~ "asus" ]]; then \
-    curl -Lo /etc/yum.repos.d/_copr_lukenukem-asus-linux.repo https://copr.fedorainfracloud.org/coprs/lukenukem/asus-linux/repo/fedora-$(rpm -E %fedora)/lukenukem-asus-linux-fedora-$(rpm -E %fedora).repo && \
-    rpm-ostree install \
-    asusctl \
-    asusctl-rog-gui && \
-    git clone https://gitlab.com/asus-linux/firmware.git --depth 1 /tmp/asus-firmware && \
-    cp -rf /tmp/asus-firmware/* /usr/lib/firmware/ && \
-    rm -rf /tmp/asus-firmware \
-    ; elif [[ "${IMAGE_FLAVOR}" == "surface" ]]; then \
-    curl -Lo /etc/yum.repos.d/linux-surface.repo https://pkg.surfacelinux.com/fedora/linux-surface.repo && \
-    rpm-ostree override remove \
-    libwacom \
-    libwacom-data \
-    --install libwacom-surface \
-    --install libwacom-surface-data && \
-    rpm-ostree install \
-    iptsd \
-    libcamera \
-    libcamera-tools \
-    libcamera-gstreamer \
-    libcamera-ipa \
-    pipewire-plugin-libcamera && \
-    sed -i 's@enabled=1@enabled=0@g' /etc/yum.repos.d/linux-surface.repo \
-    ; fi && \
     /usr/libexec/containerbuild/cleanup.sh && \
     ostree container commit
 
@@ -353,15 +329,6 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     /tmp/akmods-rpms/kmods/*openrazer*.rpm \
     /tmp/akmods-rpms/kmods/*v4l2loopback*.rpm \
     /tmp/akmods-rpms/kmods/*wl*.rpm \
-    /tmp/akmods-rpms/kmods/*framework-laptop*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*gcadapter_oc*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*nct6687*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*zenergy*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*vhba*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*gpd-fan*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*ayaneo-platform*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*ayn-platform*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*bmi260*.rpm \
     /tmp/akmods-extra-rpms/kmods/*ryzen-smu*.rpm \
     /tmp/akmods-extra-rpms/kmods/*evdi*.rpm && \
     rpm-ostree override replace \

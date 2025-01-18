@@ -112,20 +112,23 @@ jobs:
           remove-codeql: true
 
       # Pulling the main image and rechunking it is necessary to avoid common failures.
-      - name: Pull main, rechunk images
-        uses: Wandalen/wretry.action@v3.8.0
-        with:
-          attempt_limit: 3
-          attempt_delay: 15000
-          command: |
-            # pull the base images used for FROM in Containerfile so
-            # we can retry on that unfortunately common failure case
-            sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-${{ env.BASE_IMAGE_FLAVOR }}:${{ env.FEDORA_VERSION }}
-            sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/akmods:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
-            sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/akmods-extra:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
+      # NOTE: It seems like prepull using wretry does not work along with redhat buildah
+      # Need to run buildah using bash if wanna work properly.
+      #
+      # - name: Pull main, rechunk images
+      #   uses: Wandalen/wretry.action@v3.8.0
+      #   with:
+      #     attempt_limit: 3
+      #     attempt_delay: 15000
+      #     command: |
+      #       # pull the base images used for FROM in Containerfile so
+      #       # we can retry on that unfortunately common failure case
+      #       sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-${{ env.BASE_IMAGE_FLAVOR }}:${{ env.FEDORA_VERSION }}
+      #       sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/akmods:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
+      #       sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/akmods-extra:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
 
-            # Add rechunk as well to remove this source of failure
-            sudo podman pull ghcr.io/hhd-dev/rechunk:v1.1.1
+      #       # Add rechunk as well to remove this source of failure
+      #       sudo podman pull ghcr.io/hhd-dev/rechunk:v1.1.1
 
       # Start building Image using Containerfile.
       - name: Build Image
@@ -142,12 +145,12 @@ jobs:
           oci: false
 
       # Deleting unused images after build
-      - name: Remove auxiliary images
-        # We are tight on space, need at least 2x for OSTree
-        run: |
-          sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-${{ env.BASE_IMAGE_FLAVOR }}:${{ env.FEDORA_VERSION }}
-          sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/akmods:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
-          sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/akmods-extra:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
+      # - name: Remove auxiliary images
+      #   # We are tight on space, need at least 2x for OSTree
+      #   run: |
+      #     sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-${{ env.BASE_IMAGE_FLAVOR }}:${{ env.FEDORA_VERSION }}
+      #     sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/akmods:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
+      #     sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/akmods-extra:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
 
       # Rechunk is a script that we use on Universal Blue to make sure there isnt a single huge layer when your image gets published.
       # This does not make your image faster to download, just provides better resumability and fixes a few errors.
