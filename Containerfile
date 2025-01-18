@@ -490,7 +490,8 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     pipewire-alsa.i686 \
     gobject-introspection \
     clinfo \
-    steam && \
+    steam \
+    || true && \
     rpm-ostree install \
     lutris \
     umu-launcher \
@@ -511,7 +512,8 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     libobs_vkcapture.x86_64 \
     libobs_glcapture.x86_64 \
     libobs_vkcapture.i686 \
-    libobs_glcapture.i686 && \
+    libobs_glcapture.i686 \
+    || true && \
     sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/winetricks.desktop && \
     curl -Lo /tmp/latencyflex.tar.xz $(curl https://api.github.com/repos/ishitatsuyuki/LatencyFleX/releases/latest | jq -r '.assets[] | select(.name| test(".*.tar.xz$")).browser_download_url') && \
     mkdir -p /tmp/latencyflex && \
