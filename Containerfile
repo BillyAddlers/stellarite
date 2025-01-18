@@ -427,7 +427,6 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     rpm-ostree install \
     git \
     discover-overlay \
-    libadawaita \
     cpulimit \
     tailscale \
     btop \
@@ -443,7 +442,9 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     tmux \
     cascadia-code-nf-fonts \
     cascadia-mono-nf-fonts \
-    nerd-fonts && \
+    cloudflare-warp \
+    nerd-fonts \
+    || true && \
     /usr/libexec/containerbuild/cleanup.sh && \
     ostree container commit
 
