@@ -34,6 +34,7 @@ COPY system /
 # Update packages that commonly cause build issues
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     rpm-ostree override replace \
+    --experimental \
     --from repo=fedora \
     libusb1 \
     || true && \
@@ -436,7 +437,6 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     tailscale \
     lact \
     fastfetch \
-    atuin \
     btop \
     fzf \
     zoxide \
@@ -452,7 +452,6 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     cascadia-mono-nf-fonts \
     nerd-fonts \
     || true && \
-    systemctl enable lactd || true && \
     rpm-ostree install \
     cloudflare-warp \
     || true && \
@@ -580,6 +579,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 # Finalize
 COPY override /
 RUN mkdir -p /var/tmp && chmod 1777 /var/tmp && \
+    systemctl enable lactd || true && \
     systemctl disable gdm || true && \
     systemctl disable sddm || true && \
     systemctl enable cosmic-greeter && \
