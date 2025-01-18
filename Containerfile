@@ -33,6 +33,10 @@ COPY system /
 # Update packages that commonly cause build issues
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     rpm-ostree override replace \
+    --from repo=fedora \
+    libusb1 \
+    || true && \
+    rpm-ostree override replace \
     --experimental \
     --from repo=updates \
     vulkan-loader \
@@ -158,7 +162,6 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     libgomp \
     libobjc \
     libstdc++ \
-    libusb1 \
     || true && \
     rpm-ostree override replace \
     --experimental \
