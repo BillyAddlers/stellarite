@@ -142,6 +142,7 @@ jobs:
           image: ${{ env.IMAGE_NAME }}
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
+          format: docker
           oci: false
 
       # Deleting unused images after build
@@ -164,7 +165,7 @@ jobs:
           ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           skip_compression: true
-          version: ${{ env.CENTOS_VERSION }}
+          version: ${{ env.FEDORA_VERSION }}
           labels: ${{ steps.metadata.outputs.labels }} # Rechunk strips out all the labels during build, this needs to be reapplied here with newline separator
 
       # This is necessary so that the podman socket can find the rechunked image on its storage
