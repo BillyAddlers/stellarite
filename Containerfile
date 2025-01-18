@@ -527,18 +527,17 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     libobs_glcapture.i686 \
     || true && \
     sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/winetricks.desktop || true && \
-    curl -Lo /tmp/latencyflex.tar.xz $(curl https://api.github.com/repos/ishitatsuyuki/LatencyFleX/releases/latest | jq -r '.assets[] | select(.name| test(".*.tar.xz$")).browser_download_url') && \
-    mkdir -p /tmp/latencyflex && \
-    tar --no-same-owner --no-same-permissions --no-overwrite-dir --strip-components 1 -xvf /tmp/latencyflex.tar.xz -C /tmp/latencyflex && \
-    rm -f /tmp/latencyflex.tar.xz && \
-    cp -r /tmp/latencyflex/wine/usr/lib/wine/* /usr/lib64/wine/ && \
-    rm -rf /tmp/latencyflex && \
-    curl -Lo /usr/bin/latencyflex https://raw.githubusercontent.com/KyleGospo/LatencyFleX-Installer/main/install.sh && \
-    chmod +x /usr/bin/latencyflex && \
-    sed -i 's@/usr/lib/wine/@/usr/lib64/wine/@g' /usr/bin/latencyflex && \
-    sed -i 's@"dxvk.conf"@"/usr/share/latencyflex/dxvk.conf"@g' /usr/bin/latencyflex && \
-    chmod +x /usr/bin/latencyflex && \
-    || true && \
+    curl -Lo /tmp/latencyflex.tar.xz $(curl https://api.github.com/repos/ishitatsuyuki/LatencyFleX/releases/latest | jq -r '.assets[] | select(.name| test(".*.tar.xz$")).browser_download_url') || true && \
+    mkdir -p /tmp/latencyflex || true && \
+    tar --no-same-owner --no-same-permissions --no-overwrite-dir --strip-components 1 -xvf /tmp/latencyflex.tar.xz -C /tmp/latencyflex || true && \
+    rm -f /tmp/latencyflex.tar.xz || true && \
+    cp -r /tmp/latencyflex/wine/usr/lib/wine/* /usr/lib64/wine/ || true && \
+    rm -rf /tmp/latencyflex || true && \
+    curl -Lo /usr/bin/latencyflex https://raw.githubusercontent.com/KyleGospo/LatencyFleX-Installer/main/install.sh || true && \
+    chmod +x /usr/bin/latencyflex || true && \
+    sed -i 's@/usr/lib/wine/@/usr/lib64/wine/@g' /usr/bin/latencyflex || true && \
+    sed -i 's@"dxvk.conf"@"/usr/share/latencyflex/dxvk.conf"@g' /usr/bin/latencyflex || true && \
+    chmod +x /usr/bin/latencyflex || true && \
     /usr/libexec/containerbuild/cleanup.sh && \
     ostree container commit
 
