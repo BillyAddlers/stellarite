@@ -16,7 +16,7 @@ Stellarite is a custom Linux distribution designed to deliver an opinionated Fed
 
 While Stellarite is open for use, building a custom image based on this project is not recommended due to the extensive modifications applied, which may complicate customization or troubleshooting. For a more lightweight and flexible base, we recommend exploring alternatives like [UBlue Base](https://github.com/ublue-os/main/pkgs/container/base-main), [Kinoite](https://github.com/ublue-os/main/pkgs/container/kinoite-main), or [Silverblue](https://github.com/ublue-os/main/pkgs/container/silverblue-main), which offer excellent starting points for custom Atomic setups.
 
-<div align="center"><table><tr>Theme Select</tr><tr><td>
+<div align="center"><table><tr>Light or Dark? You Decide</tr><tr><td>
 <img src="assets/light.png"/></td><td>
 <img src="assets/dark.png"/></td></tr></table></div>
 
@@ -48,7 +48,7 @@ While Stellarite is open for use, building a custom image based on this project 
 ## Installation
 
 > [!IMPORTANT]  
-> **Download an ISO from the latest [Github Action Build Artifact](https://github.com/BillyAddlers/stellarite/actions/workflows/build_iso.yml).GitHub requires you be logged in to download.**
+> **Download an ISO from the latest [Github Action Build Artifact](https://github.com/BillyAddlers/stellarite/actions/workflows/build_iso.yml). GitHub requires you be logged in to download.**
 
 Rebase from an existing upstream Fedora Atomic to this image if you want **Open Source GPU Drivers**:
 (Please note: Mesa's Open Source option for NVIDIA GPUs, NVK is still prone to errors at the time of writing, for any issues relating to NVK [please submit a report with Mesa](<[url](https://docs.mesa3d.org/bugs.html)>), not Stellarite)
