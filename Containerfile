@@ -158,6 +158,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     libgomp \
     libobjc \
     libstdc++ \
+    libusb1 \
     || true && \
     rpm-ostree override replace \
     --experimental \
