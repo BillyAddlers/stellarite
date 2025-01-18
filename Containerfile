@@ -450,10 +450,12 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     tmux \
     cascadia-code-nf-fonts \
     cascadia-mono-nf-fonts \
-    cloudflare-warp \
     nerd-fonts \
     || true && \
     systemctl enable lactd || true && \
+    rpm-ostree install \
+    cloudflare-warp \
+    || true && \
     /usr/libexec/containerbuild/cleanup.sh && \
     ostree container commit
 
