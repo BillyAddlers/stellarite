@@ -130,21 +130,6 @@ jobs:
             # Add rechunk as well to remove this source of failure
             sudo podman pull ghcr.io/hhd-dev/rechunk:v1.1.1
 
-      # Start building Image using Containerfile.
-      # - name: Build Image
-      #   id: build_image
-      #   uses: redhat-actions/buildah-build@v2
-      #   with:
-      #     containerfiles: |
-      #       ./Containerfile
-      #     # Postfix image name with -custom to make it a little more descriptive
-      #     # Syntax: https://docs.github.com/en/actions/learn-github-actions/expressions#format
-      #     image: ${{ env.IMAGE_NAME }}
-      #     tags: ${{ steps.metadata.outputs.tags }}
-      #     labels: ${{ steps.metadata.outputs.labels }}
-      #     format: docker
-      #     oci: false
-
       # Get the source image version.
       # This is necessary to generate the primary version key that appears
       # in rpm-ostree status, and github.
@@ -331,15 +316,6 @@ jobs:
               echo "${TAG}"
           done
           echo "alias_tags=${BUILD_TAGS[*]}" >> $GITHUB_OUTPUT
-
-      # This is necessary so that the podman socket can find the rechunked image on its storage
-      # - name: Load in podman and tag
-      #   run: |
-      #     IMAGE=$(podman pull ${{ steps.rechunk.outputs.ref }})
-      #     sudo rm -rf ${{ steps.rechunk.outputs.output }}
-      #     for tag in ${{ steps.metadata.outputs.tags }}; do
-      #       podman tag $IMAGE ${{ env.IMAGE_NAME }}:$tag
-      #     done
 
       # These `if` statements are so that pull requests for your custom images do not make it publish any packages under your name without you knowing
       # They also check if the runner is on the default branch so that things like the merge queue (if you enable it), are going to work

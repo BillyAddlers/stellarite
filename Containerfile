@@ -434,6 +434,8 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     discover-overlay \
     cpulimit \
     tailscale \
+    lact \
+    fastfetch \
     btop \
     fzf \
     zoxide \
