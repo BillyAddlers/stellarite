@@ -56,7 +56,7 @@ jobs:
           FLATPAK_REFS_DIR=./flatpak-refs
           FLATPAK_REFS_DIR_ABS=$(realpath "${FLATPAK_REFS_DIR}")
           mkdir -p "${FLATPAK_REFS_DIR}"
-          mv flatpaks.txt "${FLATPAK_REFS_DIR_ABS}/flatpaks"
+          mv flatpaks "${FLATPAK_REFS_DIR_ABS}/flatpaks"
 
           # Read the list of Flatpak packages from the manifest
           FLATPAK_REFS=()
