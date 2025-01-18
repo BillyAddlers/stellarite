@@ -393,7 +393,8 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     bluez-obexd \
     bluez-cups \
     bluez-libs \
-    xorg-x11-server-Xwayland && \
+    xorg-x11-server-Xwayland \
+    || true && \
     rsync -a /tmp/mesa-fix64/ /usr/lib64/ && \
     rsync -a /tmp/mesa-fix32/ /usr/lib/ && \
     rm -rf /tmp/mesa-fix64 && \
