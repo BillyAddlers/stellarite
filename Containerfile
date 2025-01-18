@@ -401,8 +401,6 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     rm -rf /tmp/mesa-fix32 && \
     sed -i 's@enabled=0@enabled=1@g' /etc/yum.repos.d/rpmfusion-*.repo && \
     rpm-ostree install \
-    libaacs \
-    libbdplus \
     libbluray \
     libbluray-utils && \
     sed -i 's@enabled=1@enabled=0@g' /etc/yum.repos.d/rpmfusion-*.repo && \
@@ -419,7 +417,8 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     ublue-os-update-services \
     firefox \
     firefox-langpacks \
-    htop && \
+    htop \
+    || true && \
     /usr/libexec/containerbuild/cleanup.sh && \
     ostree container commit
 
