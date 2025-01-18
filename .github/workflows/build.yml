@@ -1,23 +1,40 @@
 ---
-name: Build Custom Image
+name: build stellarite
 on:
   pull_request:
     branches:
       - main
   schedule:
-    - cron: '05 10 * * *'  # 10:05am UTC everyday
+    - cron: "05 10 * * *" # 10:05am UTC everyday
   push:
     branches:
       - main
     paths-ignore:
-      - '**/README.md'
+      - "**.md"
+      - "**.txt"
+      - "artifacthub-repo.yml"
+      - "installer/**"
+      - "repo_files/**"
+      - "post_install_files/**"
+      - "docs/**"
+      - ".github/workflows/build_iso.yml"
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: "${{ github.event.repository.name }}"  # the name of the image produced by this build, matches repo names
-  IMAGE_DESC: "My Customized Universal Blue Image"
-  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"  # do not edit
-  ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4"  # You should put your own image here so that you get a fancy profile image on https://artifacthub.io/!
+  IMAGE_NAME: "${{ github.event.repository.name }}" # the name of the image produced by this build, matches repo names
+  IMAGE_FLAVOR: "main" # the flavor of the image produced by this build
+  IMAGE_DESC: "${{ github.event.repository.description }}" # the description of the image produced by this build, matches repo descriptions
+  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}" # do not edit
+  BASE_IMAGE_NAME: "base" # the name of the base image
+  BASE_IMAGE_FLAVOR: "main" # the flavor of the base image
+  FEDORA_MAJOR_VERSION: "41" # do not edit
+  ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4" # You should put your own image here so that you get a fancy profile image on https://artifacthub.io/!
+  PULL_IMAGE_REGISTRY: ghcr.io/ublue-os
+  PUSH_IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+  KERNEL_FLAVOR: "bazzite" # the flavor of the kernel
+  KERNEL_VERSION: "6.12.8-201.bazzite.fc41.x86_64" # the version of the kernel
+  DEFAULT_TAG: "latest" # the default tag for the image
+  IS_STABLE_VERSION: "true" # whether the image is a stable version
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ inputs.brand_name}}-${{ inputs.stream_name }}
@@ -34,16 +51,18 @@ jobs:
       id-token: write
 
     steps:
+      # Unified environment variables declaration to make things neat.
+      - name: Define extra environment variables
+        run: |
+          echo "CONTAINER_TARGET=${IMAGE_NAME}" >> $GITHUB_ENV
+          echo "SHA_HEAD_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
+          echo "KERNEL_FLAVOR=${KERNEL_FLAVOR}" >> $GITHUB_ENV
+          echo "FEDORA_VERSION=${FEDORA_MAJOR_VERSION}" >> $GITHUB_ENV
+
       # These stage versions are pinned by https://github.com/renovatebot/renovate
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      # This is optional, but if you see that your builds are way too big for the runners, you can enable this by uncommenting the following lines:
-      # - name: Maximize build space
-      #   uses: ublue-os/remove-unwanted-software@517622d6452028f266b7ba4cc9a123b5f58a6b53 # v7
-      #   with:
-      #     remove-codeql: true
-      
       - name: Get current date
         id: date
         run: |
@@ -86,6 +105,29 @@ jobs:
           sep-tags: " "
           sep-annotations: " "
 
+      # This is optional, but if you see that your builds are way too big for the runners, you can enable this by uncommenting the following lines:
+      - name: Maximize build space
+        uses: ublue-os/remove-unwanted-software@517622d6452028f266b7ba4cc9a123b5f58a6b53 # v7
+        with:
+          remove-codeql: true
+
+      # Pulling the main image and rechunking it is necessary to avoid common failures.
+      - name: Pull main, rechunk images
+        uses: Wandalen/wretry.action@v3.8.0
+        with:
+          attempt_limit: 3
+          attempt_delay: 15000
+          command: |
+            # pull the base images used for FROM in Containerfile so
+            # we can retry on that unfortunately common failure case
+            sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-${{ env.BASE_IMAGE_FLAVOR }}:${{ env.FEDORA_VERSION }}
+            sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/akmods:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
+            sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/akmods-extra:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
+
+            # Add rechunk as well to remove this source of failure
+            sudo podman pull ghcr.io/hhd-dev/rechunk:v1.1.1
+
+      # Start building Image using Containerfile.
       - name: Build Image
         id: build_image
         uses: redhat-actions/buildah-build@v2
@@ -99,29 +141,37 @@ jobs:
           labels: ${{ steps.metadata.outputs.labels }}
           oci: false
 
+      # Deleting unused images after build
+      - name: Remove auxiliary images
+        # We are tight on space, need at least 2x for OSTree
+        run: |
+          sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-${{ env.BASE_IMAGE_FLAVOR }}:${{ env.FEDORA_VERSION }}
+          sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/akmods:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
+          sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/akmods-extra:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
+
       # Rechunk is a script that we use on Universal Blue to make sure there isnt a single huge layer when your image gets published.
       # This does not make your image faster to download, just provides better resumability and fixes a few errors.
       # Documentation for Rechunk is provided on their github repository at https://github.com/hhd-dev/rechunk
       # You can enable it by uncommenting the following lines:
-      # - name: Run Rechunker
-      #   id: rechunk
-      #   uses: hhd-dev/rechunk@f153348d8100c1f504dec435460a0d7baf11a9d2 # v1.1.1
-      #   with:
-      #     rechunk: 'ghcr.io/hhd-dev/rechunk:v1.0.1'
-      #     ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
-      #     prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
-      #     skip_compression: true
-      #     version: ${{ env.CENTOS_VERSION }}
-      #     labels: ${{ steps.metadata.outputs.labels }} # Rechunk strips out all the labels during build, this needs to be reapplied here with newline separator
+      - name: Run Rechunker
+        id: rechunk
+        uses: hhd-dev/rechunk@f153348d8100c1f504dec435460a0d7baf11a9d2 # v1.1.1
+        with:
+          rechunk: "ghcr.io/hhd-dev/rechunk:v1.0.1"
+          ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
+          prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
+          skip_compression: true
+          version: ${{ env.CENTOS_VERSION }}
+          labels: ${{ steps.metadata.outputs.labels }} # Rechunk strips out all the labels during build, this needs to be reapplied here with newline separator
 
       # This is necessary so that the podman socket can find the rechunked image on its storage
-      # - name: Load in podman and tag
-      #   run: |
-      #     IMAGE=$(podman pull ${{ steps.rechunk.outputs.ref }})
-      #     sudo rm -rf ${{ steps.rechunk.outputs.output }}
-      #     for tag in ${{ steps.metadata.outputs.tags }}; do
-      #       podman tag $IMAGE ${{ env.IMAGE_NAME }}:$tag
-      #     done
+      - name: Load in podman and tag
+        run: |
+          IMAGE=$(podman pull ${{ steps.rechunk.outputs.ref }})
+          sudo rm -rf ${{ steps.rechunk.outputs.output }}
+          for tag in ${{ steps.metadata.outputs.tags }}; do
+            podman tag $IMAGE ${{ env.IMAGE_NAME }}:$tag
+          done
 
       # These `if` statements are so that pull requests for your custom images do not make it publish any packages under your name without you knowing
       # They also check if the runner is on the default branch so that things like the merge queue (if you enable it), are going to work
