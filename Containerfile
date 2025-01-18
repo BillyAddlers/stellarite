@@ -496,40 +496,40 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     clinfo \
     steam \
     || true && \
-    rpm-ostree install \
-    lutris \
-    umu-launcher \
-    wine-core.x86_64 \
-    wine-core.i686 \
-    wine-pulseaudio.x86_64 \
-    wine-pulseaudio.i686 \
-    libFAudio.x86_64 \
-    libFAudio.i686 \
-    winetricks \
-    latencyflex-vulkan-layer \
-    mesa-vulkan-drivers.i686 \
-    mesa-va-drivers.i686 \
-    vkBasalt.x86_64 \
-    vkBasalt.i686 \
-    mangohud.x86_64 \
-    mangohud.i686 \
-    libobs_vkcapture.x86_64 \
-    libobs_glcapture.x86_64 \
-    libobs_vkcapture.i686 \
-    libobs_glcapture.i686 \
-    || true && \
-    sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/winetricks.desktop && \
-    curl -Lo /tmp/latencyflex.tar.xz $(curl https://api.github.com/repos/ishitatsuyuki/LatencyFleX/releases/latest | jq -r '.assets[] | select(.name| test(".*.tar.xz$")).browser_download_url') && \
-    mkdir -p /tmp/latencyflex && \
-    tar --no-same-owner --no-same-permissions --no-overwrite-dir --strip-components 1 -xvf /tmp/latencyflex.tar.xz -C /tmp/latencyflex && \
-    rm -f /tmp/latencyflex.tar.xz && \
-    cp -r /tmp/latencyflex/wine/usr/lib/wine/* /usr/lib64/wine/ && \
-    rm -rf /tmp/latencyflex && \
-    curl -Lo /usr/bin/latencyflex https://raw.githubusercontent.com/KyleGospo/LatencyFleX-Installer/main/install.sh && \
-    chmod +x /usr/bin/latencyflex && \
-    sed -i 's@/usr/lib/wine/@/usr/lib64/wine/@g' /usr/bin/latencyflex && \
-    sed -i 's@"dxvk.conf"@"/usr/share/latencyflex/dxvk.conf"@g' /usr/bin/latencyflex && \
-    chmod +x /usr/bin/latencyflex && \
+    # rpm-ostree install \
+    # lutris \
+    # umu-launcher \
+    # wine-core.x86_64 \
+    # wine-core.i686 \
+    # wine-pulseaudio.x86_64 \
+    # wine-pulseaudio.i686 \
+    # libFAudio.x86_64 \
+    # libFAudio.i686 \
+    # winetricks \
+    # latencyflex-vulkan-layer \
+    # mesa-vulkan-drivers.i686 \
+    # mesa-va-drivers.i686 \
+    # vkBasalt.x86_64 \
+    # vkBasalt.i686 \
+    # mangohud.x86_64 \
+    # mangohud.i686 \
+    # libobs_vkcapture.x86_64 \
+    # libobs_glcapture.x86_64 \
+    # libobs_vkcapture.i686 \
+    # libobs_glcapture.i686 \
+    # || true && \
+    # sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/winetricks.desktop && \
+    # curl -Lo /tmp/latencyflex.tar.xz $(curl https://api.github.com/repos/ishitatsuyuki/LatencyFleX/releases/latest | jq -r '.assets[] | select(.name| test(".*.tar.xz$")).browser_download_url') && \
+    # mkdir -p /tmp/latencyflex && \
+    # tar --no-same-owner --no-same-permissions --no-overwrite-dir --strip-components 1 -xvf /tmp/latencyflex.tar.xz -C /tmp/latencyflex && \
+    # rm -f /tmp/latencyflex.tar.xz && \
+    # cp -r /tmp/latencyflex/wine/usr/lib/wine/* /usr/lib64/wine/ && \
+    # rm -rf /tmp/latencyflex && \
+    # curl -Lo /usr/bin/latencyflex https://raw.githubusercontent.com/KyleGospo/LatencyFleX-Installer/main/install.sh && \
+    # chmod +x /usr/bin/latencyflex && \
+    # sed -i 's@/usr/lib/wine/@/usr/lib64/wine/@g' /usr/bin/latencyflex && \
+    # sed -i 's@"dxvk.conf"@"/usr/share/latencyflex/dxvk.conf"@g' /usr/bin/latencyflex && \
+    # chmod +x /usr/bin/latencyflex && \
     /usr/libexec/containerbuild/cleanup.sh && \
     ostree container commit
 
