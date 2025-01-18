@@ -329,8 +329,18 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     /tmp/akmods-rpms/kmods/*openrazer*.rpm \
     /tmp/akmods-rpms/kmods/*v4l2loopback*.rpm \
     /tmp/akmods-rpms/kmods/*wl*.rpm \
+    /tmp/akmods-rpms/kmods/*framework-laptop*.rpm \
+    /tmp/akmods-extra-rpms/kmods/*gcadapter_oc*.rpm \
+    /tmp/akmods-extra-rpms/kmods/*nct6687*.rpm \
+    /tmp/akmods-extra-rpms/kmods/*zenergy*.rpm \
+    /tmp/akmods-extra-rpms/kmods/*vhba*.rpm \
+    /tmp/akmods-extra-rpms/kmods/*gpd-fan*.rpm \
+    /tmp/akmods-extra-rpms/kmods/*ayaneo-platform*.rpm \
+    /tmp/akmods-extra-rpms/kmods/*ayn-platform*.rpm \
+    /tmp/akmods-extra-rpms/kmods/*bmi260*.rpm \
     /tmp/akmods-extra-rpms/kmods/*ryzen-smu*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*evdi*.rpm && \
+    /tmp/akmods-extra-rpms/kmods/*evdi*.rpm \
+    || true && \
     rpm-ostree override replace \
     --experimental \
     --from repo=copr:copr.fedorainfracloud.org:ublue-os:staging \
