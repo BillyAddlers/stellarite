@@ -36,7 +36,7 @@ jobs:
           echo "SHA_HEAD_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
           echo "KERNEL_FLAVOR=${KERNEL_FLAVOR}" >> $GITHUB_ENV
           echo "FEDORA_VERSION=${FEDORA_MAJOR_VERSION}" >> $GITHUB_ENV
-          echo "IMAGE_TAG=${FEDORA_MAJOR_VERSION}-amd64" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${FEDORA_MAJOR_VERSION}" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v4
