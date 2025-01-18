@@ -545,7 +545,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 COPY vendor/cloudflare-warp /tmp
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     rpm-ostree install \
-    /tmp/cloudflare-warp/cloudflare-warp-*.rpm && \
+    /tmp/cloudflare-warp-*.rpm && \
     /usr/libexec/containerbuild/cleanup.sh && \
     ostree container commit
 
