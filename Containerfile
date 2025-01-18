@@ -436,6 +436,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     tailscale \
     lact \
     fastfetch \
+    atuin \
     btop \
     fzf \
     zoxide \
@@ -452,6 +453,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     cloudflare-warp \
     nerd-fonts \
     || true && \
+    systemctl enable lactd || true && \
     /usr/libexec/containerbuild/cleanup.sh && \
     ostree container commit
 
@@ -574,6 +576,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     ostree container commit
 
 # Finalize
+COPY override /
 RUN mkdir -p /var/tmp && chmod 1777 /var/tmp && \
     systemctl disable gdm || true && \
     systemctl disable sddm || true && \
