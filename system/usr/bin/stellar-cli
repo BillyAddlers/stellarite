@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Define the path to the RPM package
+default_rpm_path="/usr/share/ublue-os/packages/cloudflare-warp*.rpm"
+
+# Function to install Cloudflare Warp
+install_warp() {
+    local rpm_path=${1:-$default_rpm_path}
+
+    if ls $rpm_path &>/dev/null; then
+        echo "Installing Cloudflare Warp from $rpm_path using rpm-ostree..."
+        sudo rpm-ostree install $rpm_path && echo "Cloudflare Warp installed successfully." || echo "Failed to install Cloudflare Warp."
+    else
+        echo "No RPM packages found at $rpm_path. Please verify the path."
+        exit 1
+    fi
+}
+
+# Function to uninstall Cloudflare Warp
+uninstall_warp() {
+    echo "Uninstalling Cloudflare Warp using rpm-ostree..."
+    if sudo rpm-ostree uninstall cloudflare-warp; then
+        echo "Cloudflare Warp uninstalled successfully."
+    else
+        echo "Failed to uninstall Cloudflare Warp or it may not be installed."
+        exit 1
+    fi
+}
+
+# Main script logic
+case "$1" in
+    install-warp)
+        install_warp "$2"
+        ;;
+    uninstall-warp)
+        uninstall_warp
+        ;;
+    *)
+        echo "Usage: $0 {install-warp [rpm_path] | uninstall-warp}"
+        exit 1
+        ;;
+esac
