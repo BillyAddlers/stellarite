@@ -542,12 +542,13 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     ostree container commit
 
 # Install cloudflare-warp supplied from local file
-COPY vendor/cloudflare-warp /tmp
-RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
-    rpm-ostree install \
-    /tmp/cloudflare-warp-*.rpm && \
-    /usr/libexec/containerbuild/cleanup.sh && \
-    ostree container commit
+# Will be used later along with script
+COPY vendor/cloudflare-warp /usr/share/ublue-os/packages
+# RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+#     rpm-ostree install \
+#     /tmp/cloudflare-warp-*.rpm && \
+#     /usr/libexec/containerbuild/cleanup.sh && \
+#     ostree container commit
 
 # Install and configure Cosmic DE
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
