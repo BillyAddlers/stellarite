@@ -115,43 +115,147 @@ jobs:
       # NOTE: It seems like prepull using wretry does not work along with redhat buildah
       # Need to run buildah using bash if wanna work properly.
       #
-      # - name: Pull main, rechunk images
-      #   uses: Wandalen/wretry.action@v3.8.0
-      #   with:
-      #     attempt_limit: 3
-      #     attempt_delay: 15000
-      #     command: |
-      #       # pull the base images used for FROM in Containerfile so
-      #       # we can retry on that unfortunately common failure case
-      #       sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-${{ env.BASE_IMAGE_FLAVOR }}:${{ env.FEDORA_VERSION }}
-      #       sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/akmods:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
-      #       sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/akmods-extra:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
+      - name: Pull main, rechunk images
+        uses: Wandalen/wretry.action@v3.8.0
+        with:
+          attempt_limit: 3
+          attempt_delay: 15000
+          command: |
+            # pull the base images used for FROM in Containerfile so
+            # we can retry on that unfortunately common failure case
+            sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-${{ env.BASE_IMAGE_FLAVOR }}:${{ env.FEDORA_VERSION }}
+            sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/akmods:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
+            sudo podman pull ${{ env.PULL_IMAGE_REGISTRY }}/akmods-extra:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
 
-      #       # Add rechunk as well to remove this source of failure
-      #       sudo podman pull ghcr.io/hhd-dev/rechunk:v1.1.1
+            # Add rechunk as well to remove this source of failure
+            sudo podman pull ghcr.io/hhd-dev/rechunk:v1.1.1
 
       # Start building Image using Containerfile.
+      # - name: Build Image
+      #   id: build_image
+      #   uses: redhat-actions/buildah-build@v2
+      #   with:
+      #     containerfiles: |
+      #       ./Containerfile
+      #     # Postfix image name with -custom to make it a little more descriptive
+      #     # Syntax: https://docs.github.com/en/actions/learn-github-actions/expressions#format
+      #     image: ${{ env.IMAGE_NAME }}
+      #     tags: ${{ steps.metadata.outputs.tags }}
+      #     labels: ${{ steps.metadata.outputs.labels }}
+      #     format: docker
+      #     oci: false
+
+      # Get the source image version.
+      # This is necessary to generate the primary version key that appears
+      # in rpm-ostree status, and github.
+      - name: Get source versions
+        id: labels
+        uses: Wandalen/wretry.action@v3.8.0
+        with:
+          attempt_limit: 3
+          attempt_delay: 15000
+          command: |
+            set -eo pipefail
+            skopeo inspect docker://${{ env.PULL_IMAGE_REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-${{ env.BASE_IMAGE_FLAVOR }}:${{ env.FEDORA_VERSION }} > source.json
+            ver=$(jq -r '.Labels["org.opencontainers.image.version"]' source.json)
+            if [ -z "$ver" ] || [ "null" = "$ver" ]; then
+              echo "inspected image version must not be empty or null"
+              exit 1
+            fi
+            echo "SOURCE_IMAGE_VERSION=$ver" >> $GITHUB_ENV
+
+      # Generate a primary version key that appears
+      # in rpm-ostree status, and github.
+      - name: Generate Version
+        id: generate-version
+        shell: bash
+        run: |
+          # Generate the primary version key that will be stored on os-release,
+          # shown on the bootloader, and used for the image tag.
+          UPSTREAM_TAG="${{ env.SOURCE_IMAGE_VERSION }}"
+          # Remove .0 suffix from upstream tag so we can add our own and
+          # the wrong one does not end up in the image.
+          UPSTREAM_TAG="${UPSTREAM_TAG%.*}"
+          FEDORA_VERSION="${{ env.FEDORA_VERSION }}"
+          SHA_SHORT="${GITHUB_SHA::7}"
+
+          if [ -n "${{ github.event.pull_request.number }}" ]; then
+            VERSION="pr-${FEDORA_VERSION}-${{ github.event.pull_request.number }}"
+            PRETTY_VERSION="PR (${{ github.event.pull_request.number }}, ${UPSTREAM_TAG})"
+          elif [[ ${{ github.ref_name }} == "unstable" ]]; then
+            VERSION="unstable-${UPSTREAM_TAG}"
+            PRETTY_VERSION="Unstable (F${UPSTREAM_TAG}, #${SHA_SHORT})"
+          elif [[ ${{ github.ref_name }} == "testing" ]]; then
+            VERSION="testing-${UPSTREAM_TAG}"
+            PRETTY_VERSION="Testing (F${UPSTREAM_TAG}, #${SHA_SHORT})"
+          else
+            VERSION="${UPSTREAM_TAG}"
+            PRETTY_VERSION="Stable (F${UPSTREAM_TAG})"
+          fi
+          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+          echo "pretty=${PRETTY_VERSION}" >> $GITHUB_OUTPUT
+
+          echo "Generated the following:"
+          cat $GITHUB_OUTPUT
+
+      # Start building manually using bash script
       - name: Build Image
         id: build_image
-        uses: redhat-actions/buildah-build@v2
-        with:
-          containerfiles: |
-            ./Containerfile
-          # Postfix image name with -custom to make it a little more descriptive
-          # Syntax: https://docs.github.com/en/actions/learn-github-actions/expressions#format
-          image: ${{ env.IMAGE_NAME }}
-          tags: ${{ steps.metadata.outputs.tags }}
-          labels: ${{ steps.metadata.outputs.labels }}
-          format: docker
-          oci: false
+        run: |
+          sudo buildah build \
+            --target ${{ env.CONTAINER_TARGET }} \
+            --build-arg IMAGE_NAME=${{ env.IMAGE_NAME }} \
+            --build-arg IMAGE_FLAVOR=${{ env.IMAGE_FLAVOR }} \
+            --build-arg IMAGE_VENDOR=${{ github.repository_owner }} \
+            --build-arg BASE_IMAGE_NAME=${{ env.BASE_IMAGE_NAME }} \
+            --build-arg BASE_IMAGE_FLAVOR=${{ env.BASE_IMAGE_FLAVOR }} \
+            --build-arg FEDORA_VERSION=${{ env.FEDORA_MAJOR_VERSION }} \
+            --build-arg KERNEL_FLAVOR=${{ env.KERNEL_FLAVOR }} \
+            --build-arg KERNEL_VERSION=${{ env.KERNEL_VERSION }} \
+            --build-arg IMAGE_BRANCH=${{ github.ref_name }} \
+            --build-arg SHA_HEAD_SHORT=${{ env.SHA_HEAD_SHORT }} \
+            --build-arg VERSION_TAG=${{ steps.generate-version.outputs.tag }} \
+            --build-arg VERSION_PRETTY="${{ steps.generate-version.outputs.pretty }}" \
+            --tag ${{ env.IMAGE_NAME }} .
 
       # Deleting unused images after build
-      # - name: Remove auxiliary images
-      #   # We are tight on space, need at least 2x for OSTree
-      #   run: |
-      #     sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-${{ env.BASE_IMAGE_FLAVOR }}:${{ env.FEDORA_VERSION }}
-      #     sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/akmods:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
-      #     sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/akmods-extra:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
+      - name: Remove auxiliary images
+        # We are tight on space, need at least 2x for OSTree
+        run: |
+          sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-${{ env.BASE_IMAGE_FLAVOR }}:${{ env.FEDORA_VERSION }}
+          sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/akmods:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
+          sudo podman image rm ${{ env.PULL_IMAGE_REGISTRY }}/akmods-extra:${{ env.KERNEL_FLAVOR }}-${{ env.FEDORA_VERSION }}-${{ env.KERNEL_VERSION }}
+
+      # Workaround bug where capital letters in your GitHub username make it impossible to push to GHCR.
+      # https://github.com/macbre/push-to-ghcr/issues/12
+      - name: Lowercase Registry
+        id: registry_case
+        uses: ASzc/change-string-case-action@v6
+        with:
+          string: ${{ env.IMAGE_REGISTRY }}
+
+      # We're using certs from Universal Blue's repo to check the kernel signature.
+      # https://github.com/ublue-os/kernel-cache
+      #
+      - name: Check Secureboot
+        shell: bash
+        run: |
+          set -x
+          if [[ ! $(command -v sbverify) || ! $(command -v curl) || ! $(command -v openssl) ]]; then
+            sudo apt update
+            sudo apt install sbsigntool curl openssl
+          fi
+          TMP=$(sudo podman create localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }} bash)
+          sudo podman cp $TMP:/usr/lib/modules/${{ env.KERNEL_VERSION }}/vmlinuz .
+          sudo podman rm $TMP
+          sudo chmod 666 vmlinuz # might not be needed
+          sbverify --list vmlinuz
+          curl --retry 3 -Lo kernel-sign.der https://github.com/ublue-os/kernel-cache/raw/main/certs/public_key.der
+          curl --retry 3 -Lo akmods.der https://github.com/ublue-os/kernel-cache/raw/main/certs/public_key_2.der
+          openssl x509 -in kernel-sign.der -out kernel-sign.crt
+          openssl x509 -in akmods.der -out akmods.crt
+          sbverify --cert kernel-sign.crt vmlinuz || exit 1
+          sbverify --cert akmods.crt vmlinuz || exit 1
 
       # Rechunk is a script that we use on Universal Blue to make sure there isnt a single huge layer when your image gets published.
       # This does not make your image faster to download, just provides better resumability and fixes a few errors.
@@ -159,23 +263,83 @@ jobs:
       # You can enable it by uncommenting the following lines:
       - name: Run Rechunker
         id: rechunk
-        uses: hhd-dev/rechunk@f153348d8100c1f504dec435460a0d7baf11a9d2 # v1.1.1
+        uses: hhd-dev/rechunk@v1.1.2
         with:
-          rechunk: "ghcr.io/hhd-dev/rechunk:v1.0.1"
+          rechunk: "ghcr.io/hhd-dev/rechunk:v1.1.2"
           ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
-          prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
+          prev-ref: "${{ steps.registry_case.outputs.lowercase }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           skip_compression: true
-          version: ${{ env.FEDORA_VERSION }}
+          version: ${{ env.FEDORA_MAJOR_VERSION }}
           labels: ${{ steps.metadata.outputs.labels }} # Rechunk strips out all the labels during build, this needs to be reapplied here with newline separator
 
-      # This is necessary so that the podman socket can find the rechunked image on its storage
-      - name: Load in podman and tag
+      # Generate tags after rechunker runs and checks the primary tag is not duplicated
+      # If it is, rechunk will suffix it by .1, .2, etc and put it in steps.rechunk.outputs.version
+      - name: Generate tags
+        id: generate-tags
+        shell: bash
         run: |
-          IMAGE=$(podman pull ${{ steps.rechunk.outputs.ref }})
-          sudo rm -rf ${{ steps.rechunk.outputs.output }}
-          for tag in ${{ steps.metadata.outputs.tags }}; do
-            podman tag $IMAGE ${{ env.IMAGE_NAME }}:$tag
+          # Common vars for generating tags
+          VERSION_TAG="${{ steps.rechunk.outputs.version }}"
+          UPSTREAM_TAG="${{ env.SOURCE_IMAGE_VERSION }}"
+          FEDORA_VERSION="${{ env.FEDORA_VERSION }}"
+          SHA_SHORT="${GITHUB_SHA::7}"
+          BUILD_TAGS=( "${VERSION_TAG}" )
+
+          # Use latest var to check if we should tag as latest
+          unset LATEST
+          if [[ "${{ env.IS_STABLE_VERSION }}" == "true" ]] && \
+              [[ "${{ env.IS_STABLE_VERSION }}" == "true" ]]; then
+                LATEST="1"
+          fi
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # Track latest ver per PR
+            if [ -n "$LATEST" ]; then
+                BUILD_TAGS+=("pr-${{ github.event.pull_request.number }}")
+            fi
+          elif [[ ${{ github.ref_name }} == "unstable" ]]; then
+            # Per fedora version
+            BUILD_TAGS+=("${FEDORA_VERSION}-unstable")
+            BUILD_TAGS+=("unstable-${FEDORA_VERSION}") # flip ver to be last
+
+            if [ -n "$LATEST" ]; then
+                BUILD_TAGS+=("unstable")
+            fi
+          elif [[ ${{ github.ref_name }} == "testing" ]]; then
+            # Per fedora version
+            BUILD_TAGS+=("${FEDORA_VERSION}-testing")
+            BUILD_TAGS+=("testing-${FEDORA_VERSION}") # flip ver to be last
+
+            if [ -n "$LATEST" ]; then
+                BUILD_TAGS+=("testing")
+            fi
+          else
+            BUILD_TAGS+=("${FEDORA_VERSION}")
+            BUILD_TAGS+=("stable-${VERSION_TAG}")
+
+            # Per fedora version
+            BUILD_TAGS+=("${FEDORA_VERSION}-stable")
+            BUILD_TAGS+=("stable-${FEDORA_VERSION}") # flip ver to be last
+
+            if [ -n "$LATEST" ]; then
+              BUILD_TAGS+=("latest" "stable")
+            fi
+          fi
+
+          echo "Generated the following build tags: "
+          for TAG in "${BUILD_TAGS[@]}"; do
+              echo "${TAG}"
           done
+          echo "alias_tags=${BUILD_TAGS[*]}" >> $GITHUB_OUTPUT
+
+      # This is necessary so that the podman socket can find the rechunked image on its storage
+      # - name: Load in podman and tag
+      #   run: |
+      #     IMAGE=$(podman pull ${{ steps.rechunk.outputs.ref }})
+      #     sudo rm -rf ${{ steps.rechunk.outputs.output }}
+      #     for tag in ${{ steps.metadata.outputs.tags }}; do
+      #       podman tag $IMAGE ${{ env.IMAGE_NAME }}:$tag
+      #     done
 
       # These `if` statements are so that pull requests for your custom images do not make it publish any packages under your name without you knowing
       # They also check if the runner is on the default branch so that things like the merge queue (if you enable it), are going to work
@@ -187,27 +351,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Workaround bug where capital letters in your GitHub username make it impossible to push to GHCR.
-      # https://github.com/macbre/push-to-ghcr/issues/12
-      - name: Lowercase Registry
-        id: registry_case
-        uses: ASzc/change-string-case-action@v6
-        with:
-          string: ${{ env.IMAGE_REGISTRY }}
-
+      # Push the image to GHCR (Image Registry)
       - name: Push To GHCR
-        uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: Wandalen/wretry.action@v3.8.0
         id: push
-        env:
-          REGISTRY_USER: ${{ github.actor }}
-          REGISTRY_PASSWORD: ${{ github.token }}
+        if: github.event_name != 'pull_request'
         with:
-          registry: ${{ steps.registry_case.outputs.lowercase }}
-          image: ${{ env.IMAGE_NAME }}
-          tags: ${{ steps.metadata.outputs.tags }}
-          username: ${{ env.REGISTRY_USER }}
-          password: ${{ env.REGISTRY_PASSWORD }}
+          attempt_limit: 3
+          attempt_delay: 15000
+          command: |
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u ${{ github.actor }} --password-stdin
+            for tag in ${{ steps.generate-tags.outputs.alias_tags }}; do
+              sudo skopeo copy ${{ steps.rechunk.outputs.ref }} docker://${{ steps.registry_case.outputs.lowercase }}/${{ env.IMAGE_NAME }}:$tag
+            done
+
+      # Generate digest for Image.
+      - name: Get Image Digest
+        id: digest
+        run: |
+          # Get digest for signing
+          DIGEST=$(sudo skopeo inspect --format '{{.Digest}}' ${{ steps.rechunk.outputs.ref }})
+          echo "Digest is: $DIGEST"
+          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
 
       # This section is optional and only needs to be enabled if you plan on distributing
       # your project for others to consume. You will need to create a public and private key
@@ -217,14 +382,13 @@ jobs:
         uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
 
+      # Sign the image.
       - name: Sign container image
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        run: |
-          IMAGE_FULL="${{ steps.registry_case.outputs.lowercase }}/${IMAGE_NAME}"
-          for tag in ${{ steps.metadata.outputs.tags }}; do
-            cosign sign -y --key env://COSIGN_PRIVATE_KEY $IMAGE_FULL:$tag
-          done
-        env:
-          TAGS: ${{ steps.push.outputs.digest }}
-          COSIGN_EXPERIMENTAL: false
-          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+        uses: EyeCantCU/cosign-action/sign@v0.3.0
+        if: github.event_name != 'pull_request'
+        with:
+          containers: ${{ env.IMAGE_NAME }}
+          registry-token: ${{ secrets.GITHUB_TOKEN }}
+          signing-secret: ${{ secrets.SIGNING_SECRET }}
+          tags: ${{ steps.digest.outputs.digest }}
+          registry: ${{ env.PUSH_IMAGE_REGISTRY }}
