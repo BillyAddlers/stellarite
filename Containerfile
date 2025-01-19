@@ -544,21 +544,21 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 # Install cloudflare-warp supplied from local file
 # Will be used later along with script
 COPY vendor/cloudflare-warp /usr/share/ublue-os/packages
-# RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
-#     rpm-ostree install \
-#     /tmp/cloudflare-warp-*.rpm && \
-#     /usr/libexec/containerbuild/cleanup.sh && \
-#     ostree container commit
 
 # Install and configure Cosmic DE
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     rpm-ostree install \
     cosmic-desktop && \
+    # We remove cosmic-store and replace it with gnome-software for better functionality
+    rpm-ostree remove \
+    cosmic-store || true && \
     rpm-ostree install \
+    gnome-software \
     gnome-disk-utility \
     gparted \
     gnome-keyring NetworkManager-tui \
     NetworkManager-openvpn && \
+    /usr/libexec/containerbuild/cleanup.sh && \
     ostree container commit
 
 # Install Gamescope, ROCM, and Waydroid on non-Nvidia images
