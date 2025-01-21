@@ -210,7 +210,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 ## Other possible base images include:
 # FROM ghcr.io/ublue-os/bazzite:stable
 # FROM ghcr.io/ublue-os/bluefin-nvidia:stable
-# 
+#
 # ... and so on, here are more base images
 # Universal Blue Images: https://github.com/orgs/ublue-os/packages
 # Fedora base image: quay.io/fedora/fedora-bootc:41
@@ -250,6 +250,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     curl -Lo /etc/yum.repos.d/_copr_trs-sod-swaylock-effects.repo https://copr.fedorainfracloud.org/coprs/trs-sod/swaylock-effects/repo/fedora-"${FEDORA_MAJOR_VERSION}"/trs-sod-swaylock-effects-fedora-"${FEDORA_MAJOR_VERSION}".repo && \
     curl -Lo /etc/yum.repos.d/_copr_alebastr-sway-extras.repo https://copr.fedorainfracloud.org/coprs/alebastr/sway-extras/repo/fedora-"${FEDORA_MAJOR_VERSION}"/alebastr-sway-extras-fedora-"${FEDORA_MAJOR_VERSION}".repo && \
     curl -Lo /etc/yum.repos.d/_copr_aeiro-nwg-shell.repo https://copr.fedorainfracloud.org/coprs/aeiro/nwg-shell/repo/fedora-"${FEDORA_MAJOR_VERSION}"/aeiro-nwg-shell-fedora-"${FEDORA_MAJOR_VERSION}".repo && \
+    curl -Lo /etc/yum.repos.d/_copr_atim-heroic-games-launcher.repo https://copr.fedorainfracloud.org/coprs/atim/heroic-games-launcher/repo/fedora-"${FEDORA_MAJOR_VERSION}"/atim-heroic-games-launcher-"${FEDORA_MAJOR_VERSION}".repo && \
     curl -Lo /etc/yum.repos.d/zsh-autosuggest.repo https://download.opensuse.org/repositories/shells:zsh-users:zsh-autosuggestions/Fedora_Rawhide/shells:zsh-users:zsh-autosuggestions.repo && \
     curl -fsSl https://pkg.cloudflareclient.com/cloudflare-warp-ascii.repo | tee /etc/yum.repos.d/cloudflare-warp.repo && \
     curl -Lo /etc/yum.repos.d/tailscale.repo https://pkgs.tailscale.com/stable/fedora/tailscale.repo && \
@@ -281,7 +282,6 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     rpm-ostree-libs && \
     /usr/libexec/containerbuild/cleanup.sh && \
     ostree container commit
-
 
 # Setup firmware
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
@@ -541,6 +541,22 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     /usr/libexec/containerbuild/cleanup.sh && \
     ostree container commit
 
+# Install Heroic and some additional packages
+RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    rpm-ostree install \
+    heroic-games-launcher-bin \
+    umu-launcher \
+    wine-core.x86_64 \
+    wine-core.i686 \
+    wine-pulseaudio.x86_64 \
+    wine-pulseaudio.i686 \
+    libFAudio.x86_64 \
+    libFAudio.i686 \
+    winetricks \
+    || true && \
+    /usr/libexec/containerbuild/cleanup.sh && \
+    ostree container commit
+
 # Install cloudflare-warp supplied from local file
 # Will be used later along with script
 COPY vendor/cloudflare-warp /usr/share/ublue-os/packages
@@ -578,7 +594,9 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     ostree container commit
 
 # Homebrew
+# For some reason some devices don't get homebrew installed on their machine when rebasing.
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    echo "Will install Homebrew inside /home/linuxbrew" && \
     touch /.dockerenv && \
     mkdir -p /var/home && \
     mkdir -p /var/roothome && \
