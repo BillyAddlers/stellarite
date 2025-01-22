@@ -4,11 +4,13 @@ on:
   pull_request:
     branches:
       - main
+      - testing
   schedule:
     - cron: "05 10 * * *" # 10:05am UTC everyday
   push:
     branches:
       - main
+      - testing
     paths-ignore:
       - "**.md"
       - "**.txt"
@@ -49,6 +51,11 @@ jobs:
       contents: read
       packages: write
       id-token: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        target_image_flavor: [main, minimal]
 
     steps:
       # Unified environment variables declaration to make things neat.
