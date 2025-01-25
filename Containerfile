@@ -31,6 +31,8 @@ ARG VERSION_PRETTY="${VERSION_PRETTY}"
 
 COPY system /
 
+
+
 # Update packages that commonly cause build issues
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     rpm-ostree override replace \
@@ -614,6 +616,10 @@ RUN mkdir -p /var/tmp && chmod 1777 /var/tmp && \
     systemctl disable gdm || true && \
     systemctl disable sddm || true && \
     systemctl enable cosmic-greeter && \
+    systemctl enable brew-dir-fix.service && \
+    systemctl enable brew-setup.service && \
+    systemctl disable brew-upgrade.timer && \
+    systemctl disable brew-update.timer && \
     /usr/libexec/containerbuild/image-info && \
     /usr/libexec/containerbuild/build-initramfs && \
     /usr/libexec/containerbuild/cleanup.sh && \
