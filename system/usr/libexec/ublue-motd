@@ -1,0 +1,36 @@
+#!/usr/bin/bash
+
+if [[ -n "$MC_SID" ]]; then
+	exit 0
+fi
+
+escape() {
+	sed 's/[&/\]/\\&/g' <<< "$1"
+}
+
+TIP_FILE=$(ls "/usr/share/ublue-os/motd/tips/"*".md" | shuf -n 1)
+if [[ -f "$TIP_FILE" ]]; then
+	IMAGE_INFO="/usr/share/ublue-os/image-info.json"
+	IMAGE_NAME=$(jq -r '."image-name"' < $IMAGE_INFO)
+	IMAGE_NAME_ESCAPED=$(escape "$IMAGE_NAME")
+	IMAGE_BRANCH=$(jq -r '."image-branch"' < $IMAGE_INFO)
+	IMAGE_BRANCH_ESCAPED=$(escape "$IMAGE_BRANCH")
+	TIP="󰋼 $(shuf -n 1 "$TIP_FILE")"
+
+	IMAGE_DATE=$(rpm-ostree status --booted | sed -n 's/.*Timestamp: \(.*\)/\1/p')
+	IMAGE_DATE_SECONDS=$(date -d "$IMAGE_DATE" +%s)
+	CURRENT_SECONDS=$(date +%s)
+	DIFFERENCE=$((CURRENT_SECONDS - IMAGE_DATE_SECONDS))
+	MONTH=$((30 * 24 * 60 * 60))
+	if [ "$DIFFERENCE" -ge "$MONTH" ]; then
+		TIP='# 󰇻 Your current image is over 1 month old, run `ujust update`'
+	fi
+
+	TIP_ESCAPED=$(escape "$TIP")
+
+	THEME=$(gsettings get org.gnome.desktop.interface accent-color || echo "'purple'")
+	THEME=${THEME//\'/}
+	THEME=${MOTD_FORCE_THEME:-$THEME}
+  
+	sed -e "s/%IMAGE_NAME%/$IMAGE_NAME_ESCAPED/g" -e "s/%IMAGE_BRANCH%/$IMAGE_BRANCH_ESCAPED/g" -e "s/%TIP%/$TIP_ESCAPED/g" /usr/share/ublue-os/motd/stellarite.md | tr '~' '\n' | /usr/bin/glow -s /usr/share/ublue-os/motd/themes/$COLOR_SCHEME/$THEME.json -w 78 -
+fi
