@@ -1,4 +1,5 @@
 app/com.github.tchx84.Flatseal/x86_64/stable
+app/io.podman_desktop.PodmanDesktop/x86_64/stable
 app/app.zen_browser.zen/x86_64/stable
 app/io.github.dvlv.boxbuddyrs/x86_64/stable
 app/io.github.flattool.Warehouse/x86_64/stable
@@ -9,7 +10,6 @@ app/org.gnome.Calculator/x86_64/stable
 app/org.gnome.Calendar/x86_64/stable
 app/org.gnome.Characters/x86_64/stable
 app/org.gnome.clocks/x86_64/stable
-app/org.gnome.Connections/x86_64/stable
 app/org.gnome.Contacts/x86_64/stable
 app/org.gnome.Papers/x86_64/stable
 app/org.gnome.font-viewer/x86_64/stable
@@ -23,5 +23,4 @@ runtime/org.freedesktop.Platform.VulkanLayer.OBSVkCapture/x86_64/23.08
 runtime/com.obsproject.Studio.Plugin.OBSVkCapture/x86_64/stable
 runtime/com.obsproject.Studio.Plugin.Gstreamer/x86_64/stable
 runtime/com.obsproject.Studio.Plugin.GStreamerVaapi/x86_64/stable
-runtime/org.gtk.Gtk3theme.adw-gtk3/x86_64/3.22
-runtime/org.gtk.Gtk3theme.adw-gtk3-dark/x86_64/3.22
+
