@@ -631,8 +631,6 @@ RUN mkdir -p /var/tmp && chmod 1777 /var/tmp && \
     systemctl disable brew-update.timer && \
     systemctl disable waydroid-container.service && \
     systemctl --global enable podman.socket && \
-    # Enabling transparency for ptyxis
-    dconf write /org/gnome/Ptyxis/Profiles/$(dconf read /org/gnome/Ptyxis/default-profile-uuid | tr -d "'")/opacity 0.85 && \
     # Enabling just files
     echo "import \"/usr/share/ublue-os/just/80-stellarite.just\"" >> /usr/share/ublue-os/justfile && \
     # Adding good stuff
