@@ -630,6 +630,8 @@ RUN mkdir -p /var/tmp && chmod 1777 /var/tmp && \
     systemctl disable brew-update.timer && \
     systemctl disable waydroid-container.service && \
     systemctl --global enable podman.socket && \
+    # Enabling just files
+    echo "import \"/usr/share/ublue-os/just/80-stellarite.just\"" >> /usr/share/ublue-os/justfile && \
     # Adding good stuff
     curl -Lo /etc/dxvk-example.conf https://raw.githubusercontent.com/doitsujin/dxvk/master/dxvk.conf && \
     curl -Lo /usr/bin/waydroid-choose-gpu https://raw.githubusercontent.com/KyleGospo/waydroid-scripts/main/waydroid-choose-gpu.sh && \
