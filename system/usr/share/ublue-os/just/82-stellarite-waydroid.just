@@ -1,5 +1,3 @@
-# FROM https://raw.githubusercontent.com/ublue-os/bazzite/e94aaa715438e271d7d8c5f7400985b74988ca11/system_files/desktop/shared/usr/share/ublue-os/just/82-bazzite-waydroid.just
-#
 # vim: set ft=make :
 
 alias configure-waydroid := setup-waydroid

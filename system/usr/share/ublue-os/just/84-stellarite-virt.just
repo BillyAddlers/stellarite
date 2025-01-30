@@ -1,5 +1,3 @@
-# FROM https://raw.githubusercontent.com/ublue-os/bazzite/e94aaa715438e271d7d8c5f7400985b74988ca11/system_files/desktop/shared/usr/share/ublue-os/just/84-bazzite-virt.just
-#
 # vim: set ft=make :
 
 # Setup and configure virtualization and vfio
