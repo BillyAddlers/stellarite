@@ -253,7 +253,7 @@ jobs:
           rechunk: "ghcr.io/hhd-dev/rechunk:v1.1.2"
           ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           prev-ref: "${{ steps.registry_case.outputs.lowercase }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
-          skip_compression: true
+          skip_compression: false
           version: ${{ env.FEDORA_MAJOR_VERSION }}
           labels: ${{ steps.metadata.outputs.labels }} # Rechunk strips out all the labels during build, this needs to be reapplied here with newline separator
 
