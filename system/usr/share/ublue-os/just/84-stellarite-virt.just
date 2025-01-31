@@ -22,6 +22,7 @@ setup-virtualization ACTION="":
     fi
     OPTION={{ ACTION }}
     if [ "$OPTION" == "help" ]; then
+      echo "Ujust Script for Virtualization Setup by Bazzite"
       echo "Usage: ujust setup-virtualization <option>"
       echo "  <option>: Specify the quick option to skip the prompt"
       echo "  Use 'virt-on' to select Enable Virtualization"
@@ -66,7 +67,7 @@ setup-virtualization ACTION="":
               sudo mkdir /etc/libvirt/hooks/qemu/qemu.d
             fi
           fi
-          sudo systemctl enable bazzite-libvirtd-setup.service \
+          sudo systemctl enable stellarite-libvirtd-setup.service \
             && echo "libvirtd will be enabled at next reboot"
           echo 'Please reboot to apply changes'
         fi
@@ -75,9 +76,9 @@ setup-virtualization ACTION="":
         echo "${red}Disabling${n} libvirtd before removal"
         sudo systemctl disable --now libvirtd 2> /dev/null
       fi
-      if [ "$(systemctl is-enabled bazzite-libvirtd-setup.service)" == "enabled" ]; then
-        echo "${red}Disabling${n} bazzite-libvirtd-setup"
-        sudo systemctl disable --now bazzite-libvirtd-setup.service 2> /dev/null
+      if [ "$(systemctl is-enabled stellarite-libvirtd-setup.service)" == "enabled" ]; then
+        echo "${red}Disabling${n} stellarite-libvirtd-setup"
+        sudo systemctl disable --now stellarite-libvirtd-setup.service 2> /dev/null
       fi
       echo "Removing virt-manager..."
       flatpak uninstall org.virt_manager.virt-manager
