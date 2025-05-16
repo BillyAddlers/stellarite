@@ -13,10 +13,7 @@ on:
       - "**.md"
       - "**.txt"
       - "artifacthub-repo.yml"
-      - "installer/**"
-      - "repo_files/**"
-      - "post_install_files/**"
-      - "docs/**"
+      - "assets/**"
       - ".github/workflows/build_iso.yml"
   workflow_dispatch:
 
@@ -25,14 +22,14 @@ env:
   IMAGE_FLAVOR: "main" # the flavor of the image produced by this build
   IMAGE_DESC: "${{ github.event.repository.description }}" # the description of the image produced by this build, matches repo descriptions
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}" # do not edit
-  BASE_IMAGE_NAME: "base" # the name of the base image
+  BASE_IMAGE_NAME: "cosmic-atomic" # the name of the base image
   BASE_IMAGE_FLAVOR: "main" # the flavor of the base image
-  FEDORA_MAJOR_VERSION: "41" # do not edit
+  FEDORA_MAJOR_VERSION: "42" # do not edit
   ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4" # You should put your own image here so that you get a fancy profile image on https://artifacthub.io/!
   PULL_IMAGE_REGISTRY: ghcr.io/ublue-os
   PUSH_IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
   KERNEL_FLAVOR: "bazzite" # the flavor of the kernel
-  KERNEL_VERSION: "6.12.8-201.bazzite.fc41.x86_64" # the version of the kernel
+  KERNEL_VERSION: "6.14.6-102.bazzite.fc42.x86_64" # the version of the kernel
   DEFAULT_TAG: "latest" # the default tag for the image
   IS_STABLE_VERSION: "true" # whether the image is a stable version
 
@@ -194,6 +191,7 @@ jobs:
             --build-arg IMAGE_VENDOR=${{ github.repository_owner }} \
             --build-arg BASE_IMAGE_NAME=${{ env.BASE_IMAGE_NAME }} \
             --build-arg BASE_IMAGE_FLAVOR=${{ env.BASE_IMAGE_FLAVOR }} \
+            --build-arg FEDORA_MAJOR_VERSION=${{ env.FEDORA_MAJOR_VERSION }} \
             --build-arg FEDORA_VERSION=${{ env.FEDORA_MAJOR_VERSION }} \
             --build-arg KERNEL_FLAVOR=${{ env.KERNEL_FLAVOR }} \
             --build-arg KERNEL_VERSION=${{ env.KERNEL_VERSION }} \
