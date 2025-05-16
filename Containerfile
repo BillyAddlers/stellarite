@@ -478,7 +478,7 @@ RUN mkdir -p /var/tmp && chmod 1777 /var/tmp && \
     dnf5 config-manager setopt "*tailscale*".enabled=0 && \
     dnf5 config-manager setopt "terra-mesa".enabled=0 && \
     dnf5 config-manager setopt "*charm*".enabled=0 && \
-    eval "$(/ctx/dnf5-setopt setopt '*negativo17*' enabled=0)" && \
+    eval "$(/ctx/build/dnf5-setopt setopt '*negativo17*' enabled=0)" && \
     sed -i 's#/var/lib/selinux#/etc/selinux#g' /usr/lib/python3.*/site-packages/setroubleshoot/util.py && \
     sed -i 's|#default.clock.allowed-rates = \[ 48000 \]|default.clock.allowed-rates = [ 44100 48000 ]|' /usr/share/pipewire/pipewire.conf && \
     sed -i 's|^ExecStart=.*|ExecStart=/usr/libexec/rtkit-daemon --no-canary|' /usr/lib/systemd/system/rtkit-daemon.service && \
