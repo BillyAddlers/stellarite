@@ -400,10 +400,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     /ctx/build/cleanup.sh && \
     ostree container commit
 
-# ublue-os-media-automount-udev, mount non-removable device partitions automatically under /media/media-automount/
-RUN --mount=type=cache,dst=/var/cache \
-    --mount=type=cache,dst=/var/log \
-    --mount=type=bind,from=ctx,source=/,target=/ctx \
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     dnf5 install -y --enable-repo=copr:copr.fedorainfracloud.org:ublue-os:packages \
         ublue-os-media-automount-udev && \
