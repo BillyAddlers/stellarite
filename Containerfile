@@ -154,98 +154,55 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     /ctx/build/cleanup.sh && \
     ostree container commit
 
-# Add ublue packages
-RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
-    --mount=type=bind,from=akmods,src=/rpms,dst=/tmp/akmods-rpms \
-    --mount=type=bind,from=akmods-extra,src=/rpms,dst=/tmp/akmods-extra-rpms \
-    --mount=type=bind,from=ctx,source=/,target=/ctx \
-    sed -i 's@enabled=0@enabled=1@g' /etc/yum.repos.d/_copr_ublue-os-akmods.repo && \
-    rpm-ostree install \
-    /tmp/akmods-rpms/kmods/*kvmfr*.rpm \
-    /tmp/akmods-rpms/kmods/*xone*.rpm \
-    /tmp/akmods-rpms/kmods/*openrazer*.rpm \
-    /tmp/akmods-rpms/kmods/*v4l2loopback*.rpm \
-    /tmp/akmods-rpms/kmods/*wl*.rpm \
-    /tmp/akmods-rpms/kmods/*framework-laptop*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*gcadapter_oc*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*nct6687*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*zenergy*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*vhba*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*gpd-fan*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*ayaneo-platform*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*ayn-platform*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*bmi260*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*ryzen-smu*.rpm \
-    /tmp/akmods-extra-rpms/kmods/*evdi*.rpm \
-    || true && \
-    rpm-ostree override replace \
-    --experimental \
-    --from repo=copr:copr.fedorainfracloud.org:ublue-os:staging \
-    fwupd \
-    fwupd-plugin-flashrom \
-    fwupd-plugin-modem-manager \
-    fwupd-plugin-uefi-capsule-data && \
-    sed -i 's@enabled=1@enabled=0@g' /etc/yum.repos.d/rpmfusion-*.repo && \
-    /ctx/build/cleanup.sh && \
-    ostree container commit
-
 # Install Valve's patched Mesa, Pipewire, Bluez, and Xwayland#
 # Install patched switcheroo control with proper discrete GPU support
 # Tempporary fix for GPU Encoding
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
-    rpm-ostree install \
-    mesa-dri-drivers.i686 && \
-    mkdir -p /tmp/mesa-fix64/dri && \
-    cp /usr/lib64/libgallium-*.so /tmp/mesa-fix64/ && \
-    cp /usr/lib64/dri/kms_swrast_dri.so /tmp/mesa-fix64/dri/ && \
-    cp /usr/lib64/dri/libdril_dri.so /tmp/mesa-fix64/dri/ && \
-    cp /usr/lib64/dri/swrast_dri.so /tmp/mesa-fix64/dri/ && \
-    cp /usr/lib64/dri/virtio_gpu_dri.so /tmp/mesa-fix64/dri/ && \
-    mkdir -p /tmp/mesa-fix32/dri && \
-    cp /usr/lib/libgallium-*.so /tmp/mesa-fix32/ && \
-    cp /usr/lib/dri/kms_swrast_dri.so /tmp/mesa-fix32/dri/ && \
-    cp /usr/lib/dri/libdril_dri.so /tmp/mesa-fix32/dri/ && \
-    cp /usr/lib/dri/swrast_dri.so /tmp/mesa-fix32/dri/ && \
-    cp /usr/lib/dri/virtio_gpu_dri.so /tmp/mesa-fix32/dri/ && \
-    rpm-ostree override replace \
-    --experimental \
-    --from repo=copr:copr.fedorainfracloud.org:kylegospo:bazzite-multilib \
-    mesa-libxatracker \
-    mesa-libglapi \
-    mesa-dri-drivers \
-    mesa-libgbm \
-    mesa-libEGL \
-    mesa-vulkan-drivers \
-    mesa-libGL \
-    pipewire \
-    pipewire-alsa \
-    pipewire-gstreamer \
-    pipewire-jack-audio-connection-kit \
-    pipewire-jack-audio-connection-kit-libs \
-    pipewire-libs \
-    pipewire-pulseaudio \
-    pipewire-utils \
-    pipewire-plugin-libcamera \
-    bluez \
-    bluez-obexd \
-    bluez-cups \
-    bluez-libs \
-    xorg-x11-server-Xwayland \
-    || true && \
-    rsync -a /tmp/mesa-fix64/ /usr/lib64/ && \
-    rsync -a /tmp/mesa-fix32/ /usr/lib/ && \
-    rm -rf /tmp/mesa-fix64 && \
-    rm -rf /tmp/mesa-fix32 && \
-    sed -i 's@enabled=0@enabled=1@g' /etc/yum.repos.d/rpmfusion-*.repo && \
-    rpm-ostree install \
-    libbluray \
-    libbluray-utils && \
-    sed -i 's@enabled=1@enabled=0@g' /etc/yum.repos.d/rpmfusion-*.repo && \
-    rpm-ostree override replace \
-    --experimental \
-    --from repo=copr:copr.fedorainfracloud.org:sentry:switcheroo-control_discrete \
-    switcheroo-control && \
+    declare -A toswap=( \
+        ["copr:copr.fedorainfracloud.org:bazzite-org:bazzite"]="wireplumber" \
+        ["copr:copr.fedorainfracloud.org:bazzite-org:bazzite-multilib"]="pipewire bluez xorg-x11-server-Xwayland" \
+        ["terra-extras"]="switcheroo-control" \
+        ["terra-mesa"]="mesa-filesystem" \
+        ["copr:copr.fedorainfracloud.org:ublue-os:staging"]="fwupd" \
+    ) && \
+    for repo in "${!toswap[@]}"; do \
+        for package in ${toswap[$repo]}; do dnf5 -y swap --repo=$repo $package $package; done; \
+    done && unset -v toswap repo package && \
+    dnf5 versionlock add \
+        pipewire \
+        pipewire-alsa \
+        pipewire-gstreamer \
+        pipewire-jack-audio-connection-kit \
+        pipewire-jack-audio-connection-kit-libs \
+        pipewire-libs \
+        pipewire-plugin-libcamera \
+        pipewire-pulseaudio \
+        pipewire-utils \
+        wireplumber \
+        wireplumber-libs \
+        bluez \
+        bluez-cups \
+        bluez-libs \
+        bluez-obexd \
+        xorg-x11-server-Xwayland \
+        switcheroo-control \
+        mesa-dri-drivers \
+        mesa-filesystem \
+        mesa-libEGL \
+        mesa-libGL \
+        mesa-libgbm \
+        mesa-va-drivers \
+        mesa-vulkan-drivers \
+        fwupd \
+        fwupd-plugin-flashrom \
+        fwupd-plugin-modem-manager \
+        fwupd-plugin-uefi-capsule-data && \
+    dnf5 -y install --enable-repo="*rpmfusion*" --disable-repo="*fedora-multimedia*" \
+        libaacs \
+        libbdplus \
+        libbluray \
+        libbluray-utils && \
     /ctx/build/cleanup.sh && \
     ostree container commit
 
@@ -296,7 +253,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     rpm-ostree override replace \
     --experimental \
-    --from repo=copr:copr.fedorainfracloud.org:kylegospo:bazzite \
+    --from repo=copr:copr.fedorainfracloud.org:bazzite-org:bazzite \
     ibus \
     ibus-gtk2 \
     ibus-gtk3 \
@@ -438,14 +395,18 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 # For some reason some devices don't get homebrew installed on their machine when rebasing.
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
-    echo "Will install Homebrew inside /home/linuxbrew" && \
-    touch /.dockerenv && \
-    mkdir -p /var/home && \
-    mkdir -p /var/roothome && \
-    curl -Lo /tmp/brew-install https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh && \
-    chmod +x /tmp/brew-install && \
-    /tmp/brew-install && \
-    tar --zstd -cvf /usr/share/homebrew.tar.zst /home/linuxbrew/.linuxbrew && \
+    dnf5 install -y ublue-brew && \
+    curl -Lo /usr/share/bash-prexec https://raw.githubusercontent.com/ublue-os/bash-preexec/master/bash-preexec.sh && \
+    /ctx/build/cleanup.sh && \
+    ostree container commit
+
+# ublue-os-media-automount-udev, mount non-removable device partitions automatically under /media/media-automount/
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=tmpfs,dst=/tmp \
+    dnf5 install -y --enable-repo=copr:copr.fedorainfracloud.org:ublue-os:packages \
+        ublue-os-media-automount-udev && \
     /ctx/build/cleanup.sh && \
     ostree container commit
 
