@@ -422,7 +422,8 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 
 # Finalize
 COPY override /
-RUN mkdir -p /var/tmp && chmod 1777 /var/tmp && \
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    mkdir -p /var/tmp && chmod 1777 /var/tmp && \
     # Service management
     systemctl enable lactd || true && \
     systemctl disable gdm || true && \
