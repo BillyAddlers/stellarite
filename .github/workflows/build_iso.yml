@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
     env:
-      FEDORA_MAJOR_VERSION: 41
+      FEDORA_MAJOR_VERSION: 42
       IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
       IMAGE_NAME: ${{ github.event.repository.name }}
 

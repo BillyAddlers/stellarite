@@ -13,6 +13,7 @@ ARG VERSION_PRETTY="${VERSION_PRETTY}"
 FROM ghcr.io/ublue-os/akmods:${KERNEL_FLAVOR}-${FEDORA_MAJOR_VERSION}-${KERNEL_VERSION} AS akmods
 FROM ghcr.io/ublue-os/akmods-extra:${KERNEL_FLAVOR}-${FEDORA_MAJOR_VERSION}-${KERNEL_VERSION} AS akmods-extra
 
+# Copying build scripts into main image
 FROM scratch AS ctx
 COPY build /build
 
@@ -31,6 +32,7 @@ ARG SHA_HEAD_SHORT="${SHA_HEAD_SHORT}"
 ARG VERSION_TAG="${VERSION_TAG}"
 ARG VERSION_PRETTY="${VERSION_PRETTY}"
 
+# Copying system files into main image
 COPY system /
 
 ## Other possible base images include:
@@ -54,31 +56,31 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     mkdir -p /var/roothome && \
     dnf5 -y install dnf5-plugins && \
     for copr in \
-        bazzite-org/bazzite \
-        bazzite-org/bazzite-multilib \
-        ublue-os/staging \
-        ublue-os/packages \
-        bazzite-org/LatencyFleX \
-        bazzite-org/obs-vkcapture \
-        ycollet/audinux \
-        bazzite-org/rom-properties \
-        bazzite-org/webapp-manager \
-        hhd-dev/hhd \
-        che/nerd-fonts \
-        hikariknight/looking-glass-kvmfr \
-        mavit/discover-overlay \
-        rok/cdemu \
-        lizardbyte/beta; \
+    bazzite-org/bazzite \
+    bazzite-org/bazzite-multilib \
+    ublue-os/staging \
+    ublue-os/packages \
+    bazzite-org/LatencyFleX \
+    bazzite-org/obs-vkcapture \
+    ycollet/audinux \
+    bazzite-org/rom-properties \
+    bazzite-org/webapp-manager \
+    hhd-dev/hhd \
+    che/nerd-fonts \
+    hikariknight/looking-glass-kvmfr \
+    mavit/discover-overlay \
+    rok/cdemu \
+    lizardbyte/beta; \
     do \
-        echo "Enabling copr: $copr"; \
-        dnf5 -y copr enable $copr; \
-        dnf5 -y config-manager setopt copr:copr.fedorainfracloud.org:${copr////:}.priority=98 ;\
+    echo "Enabling copr: $copr"; \
+    dnf5 -y copr enable $copr; \
+    dnf5 -y config-manager setopt copr:copr.fedorainfracloud.org:${copr////:}.priority=98 ;\
     done && unset -v copr && \
     dnf5 -y install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release{,-extras} && \
     dnf5 -y config-manager addrepo --overwrite --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo && \
     dnf5 -y install \
-        https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
-        https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
+    https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
+    https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
     sed -i 's@enabled=0@enabled=1@g' /etc/yum.repos.d/negativo17-fedora-multimedia.repo && \
     dnf5 -y config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-steam.repo && \
     dnf5 -y config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-rar.repo && \
@@ -107,7 +109,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     dnf5 -y config-manager setopt "*rpmfusion*".enabled=0 && \
     dnf5 -y copr enable bieszczaders/kernel-cachyos-addons && \
     dnf5 -y install \
-        scx-scheds && \
+    scx-scheds && \
     dnf5 -y copr disable bieszczaders/kernel-cachyos-addons && \
     dnf5 -y swap --repo copr:copr.fedorainfracloud.org:bazzite-org:bazzite bootc bootc && \
     /ctx/build/cleanup.sh && \
@@ -157,53 +159,53 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 
 # Install Valve's patched Mesa, Pipewire, Bluez, and Xwayland#
 # Install patched switcheroo control with proper discrete GPU support
-# Tempporary fix for GPU Encoding
+# Temporary fix for GPU Encoding
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     declare -A toswap=( \
-        ["copr:copr.fedorainfracloud.org:bazzite-org:bazzite"]="wireplumber" \
-        ["copr:copr.fedorainfracloud.org:bazzite-org:bazzite-multilib"]="pipewire bluez xorg-x11-server-Xwayland" \
-        ["terra-extras"]="switcheroo-control" \
-        ["terra-mesa"]="mesa-filesystem" \
-        ["copr:copr.fedorainfracloud.org:ublue-os:staging"]="fwupd" \
+    ["copr:copr.fedorainfracloud.org:bazzite-org:bazzite"]="wireplumber" \
+    ["copr:copr.fedorainfracloud.org:bazzite-org:bazzite-multilib"]="pipewire bluez xorg-x11-server-Xwayland" \
+    ["terra-extras"]="switcheroo-control" \
+    ["terra-mesa"]="mesa-filesystem" \
+    ["copr:copr.fedorainfracloud.org:ublue-os:staging"]="fwupd" \
     ) && \
     for repo in "${!toswap[@]}"; do \
-        for package in ${toswap[$repo]}; do dnf5 -y swap --repo=$repo $package $package; done; \
+    for package in ${toswap[$repo]}; do dnf5 -y swap --repo=$repo $package $package; done; \
     done && unset -v toswap repo package && \
     dnf5 versionlock add \
-        pipewire \
-        pipewire-alsa \
-        pipewire-gstreamer \
-        pipewire-jack-audio-connection-kit \
-        pipewire-jack-audio-connection-kit-libs \
-        pipewire-libs \
-        pipewire-plugin-libcamera \
-        pipewire-pulseaudio \
-        pipewire-utils \
-        wireplumber \
-        wireplumber-libs \
-        bluez \
-        bluez-cups \
-        bluez-libs \
-        bluez-obexd \
-        xorg-x11-server-Xwayland \
-        switcheroo-control \
-        mesa-dri-drivers \
-        mesa-filesystem \
-        mesa-libEGL \
-        mesa-libGL \
-        mesa-libgbm \
-        mesa-va-drivers \
-        mesa-vulkan-drivers \
-        fwupd \
-        fwupd-plugin-flashrom \
-        fwupd-plugin-modem-manager \
-        fwupd-plugin-uefi-capsule-data && \
+    pipewire \
+    pipewire-alsa \
+    pipewire-gstreamer \
+    pipewire-jack-audio-connection-kit \
+    pipewire-jack-audio-connection-kit-libs \
+    pipewire-libs \
+    pipewire-plugin-libcamera \
+    pipewire-pulseaudio \
+    pipewire-utils \
+    wireplumber \
+    wireplumber-libs \
+    bluez \
+    bluez-cups \
+    bluez-libs \
+    bluez-obexd \
+    xorg-x11-server-Xwayland \
+    switcheroo-control \
+    mesa-dri-drivers \
+    mesa-filesystem \
+    mesa-libEGL \
+    mesa-libGL \
+    mesa-libgbm \
+    mesa-va-drivers \
+    mesa-vulkan-drivers \
+    fwupd \
+    fwupd-plugin-flashrom \
+    fwupd-plugin-modem-manager \
+    fwupd-plugin-uefi-capsule-data && \
     dnf5 -y install --enable-repo="*rpmfusion*" --disable-repo="*fedora-multimedia*" \
-        libaacs \
-        libbdplus \
-        libbluray \
-        libbluray-utils && \
+    libaacs \
+    libbdplus \
+    libbluray \
+    libbluray-utils && \
     /ctx/build/cleanup.sh && \
     ostree container commit
 
@@ -404,7 +406,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     dnf5 install -y --enable-repo=copr:copr.fedorainfracloud.org:ublue-os:packages \
-        ublue-os-media-automount-udev && \
+    ublue-os-media-automount-udev && \
     /ctx/build/cleanup.sh && \
     ostree container commit
 
@@ -449,33 +451,33 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     curl -Lo /etc/distrobox/incus.ini https://github.com/ublue-os/toolboxes/raw/refs/heads/main/apps/docker/incus.ini && \
     # Disabling copr for faster sync
     for repo in \
-        fedora-cisco-openh264 \
-        fedora-steam \
-        fedora-rar \
-        terra \
-        terra-extras \
-        negativo17-fedora-multimedia \
-        _copr_ublue-os-akmods; \
+    fedora-cisco-openh264 \
+    fedora-steam \
+    fedora-rar \
+    terra \
+    terra-extras \
+    negativo17-fedora-multimedia \
+    _copr_ublue-os-akmods; \
     do \
-        sed -i 's@enabled=1@enabled=0@g' /etc/yum.repos.d/$repo.repo; \
+    sed -i 's@enabled=1@enabled=0@g' /etc/yum.repos.d/$repo.repo; \
     done && for copr in \
-        bazzite-org/bazzite \
-        bazzite-org/bazzite-multilib \
-        ublue-os/staging \
-        ublue-os/packages \
-        bazzite-org/LatencyFleX \
-        bazzite-org/obs-vkcapture \
-        ycollet/audinux \
-        bazzite-org/rom-properties \
-        bazzite-org/webapp-manager \
-        hhd-dev/hhd \
-        che/nerd-fonts \
-        mavit/discover-overlay \
-        lizardbyte/beta \
-        rok/cdemu \
-        hikariknight/looking-glass-kvmfr; \
+    bazzite-org/bazzite \
+    bazzite-org/bazzite-multilib \
+    ublue-os/staging \
+    ublue-os/packages \
+    bazzite-org/LatencyFleX \
+    bazzite-org/obs-vkcapture \
+    ycollet/audinux \
+    bazzite-org/rom-properties \
+    bazzite-org/webapp-manager \
+    hhd-dev/hhd \
+    che/nerd-fonts \
+    mavit/discover-overlay \
+    lizardbyte/beta \
+    rok/cdemu \
+    hikariknight/looking-glass-kvmfr; \
     do \
-        dnf5 -y copr disable $copr; \
+    dnf5 -y copr disable $copr; \
     done && unset -v copr && \
     dnf5 config-manager setopt "*tailscale*".enabled=0 && \
     dnf5 config-manager setopt "terra-mesa".enabled=0 && \
