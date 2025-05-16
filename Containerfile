@@ -10,9 +10,11 @@ ARG SHA_HEAD_SHORT="${SHA_HEAD_SHORT}"
 ARG VERSION_TAG="${VERSION_TAG}"
 ARG VERSION_PRETTY="${VERSION_PRETTY}"
 
-FROM ghcr.io/ublue-os/${KERNEL_FLAVOR}-kernel:${FEDORA_MAJOR_VERSION}-${KERNEL_VERSION} AS kernel
 FROM ghcr.io/ublue-os/akmods:${KERNEL_FLAVOR}-${FEDORA_MAJOR_VERSION}-${KERNEL_VERSION} AS akmods
 FROM ghcr.io/ublue-os/akmods-extra:${KERNEL_FLAVOR}-${FEDORA_MAJOR_VERSION}-${KERNEL_VERSION} AS akmods-extra
+
+FROM scratch AS ctx
+COPY build /build
 
 FROM ${BASE_IMAGE}:${FEDORA_MAJOR_VERSION} AS stellarite
 
@@ -204,7 +206,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     rpm-ostree override remove \
     glibc32 \
     || true && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 ## Other possible base images include:
@@ -255,7 +257,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     sed -i 's@enabled=0@enabled=1@g' /etc/yum.repos.d/negativo17-fedora-multimedia.repo && \
     curl -Lo /etc/yum.repos.d/negativo17-fedora-steam.repo https://negativo17.org/repos/fedora-steam.repo && \
     curl -Lo /etc/yum.repos.d/negativo17-fedora-rar.repo https://negativo17.org/repos/fedora-rar.repo && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Install Bazzite custom kernel
@@ -263,21 +265,14 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     --mount=type=bind,from=kernel,src=/tmp/rpms,dst=/tmp/kernel-rpms \
     rpm-ostree cliwrap install-to-root / && \
     echo "Will install ${KERNEL_FLAVOR} kernel" && \
-    rpm-ostree override replace \
-    --experimental \
-    /tmp/kernel-rpms/kernel-[0-9]*.rpm \
-    /tmp/kernel-rpms/kernel-core-*.rpm \
-    /tmp/kernel-rpms/kernel-modules-*.rpm \
-    /tmp/kernel-rpms/kernel-uki-virt-*.rpm && \
-    rpm-ostree install \
-    scx-scheds && \
-    rpm-ostree override replace \
-    --experimental \
-    --from repo=copr:copr.fedorainfracloud.org:kylegospo:bazzite \
-    bootc \
-    rpm-ostree \
-    rpm-ostree-libs && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/install-kernel-akmods && \
+    dnf5 -y config-manager setopt "*rpmfusion*".enabled=0 && \
+    dnf5 -y copr enable bieszczaders/kernel-cachyos-addons && \
+    dnf5 -y install \
+        scx-scheds && \
+    dnf5 -y copr disable bieszczaders/kernel-cachyos-addons && \
+    dnf5 -y swap --repo copr:copr.fedorainfracloud.org:bazzite-org:bazzite bootc bootc && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Setup firmware
@@ -318,7 +313,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     ln -s /usr/local/firmware/aw87xxx_acf_orangepi.bin /usr/lib/firmware/aw87xxx_acf_orangepi.bin && \
     ln -s /usr/local/firmware/aw87xxx_acf_airplus.bin /usr/lib/firmware/aw87xxx_acf_airplus.bin && \
     ln -s /usr/local/firmware/aw87xxx_acf_flip.bin /usr/lib/firmware/aw87xxx_acf_flip.bin && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Add ublue packages
@@ -352,7 +347,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     fwupd-plugin-modem-manager \
     fwupd-plugin-uefi-capsule-data && \
     sed -i 's@enabled=1@enabled=0@g' /etc/yum.repos.d/rpmfusion-*.repo && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Install Valve's patched Mesa, Pipewire, Bluez, and Xwayland#
@@ -411,7 +406,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     --experimental \
     --from repo=copr:copr.fedorainfracloud.org:sentry:switcheroo-control_discrete \
     switcheroo-control && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Remove unneeded packages
@@ -422,7 +417,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     firefox-langpacks \
     htop \
     || true && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Install additional packages
@@ -450,7 +445,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     cascadia-mono-nf-fonts \
     nerd-fonts \
     || true && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Install Steam plus supporting packages
@@ -497,7 +492,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     clinfo \
     steam \
     || true && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Install Lutris and some additional packages
@@ -536,7 +531,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     sed -i 's@/usr/lib/wine/@/usr/lib64/wine/@g' /usr/bin/latencyflex || true && \
     sed -i 's@"dxvk.conf"@"/usr/share/latencyflex/dxvk.conf"@g' /usr/bin/latencyflex || true && \
     chmod +x /usr/bin/latencyflex || true && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Install Heroic and some additional packages
@@ -552,7 +547,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     libFAudio.i686 \
     winetricks \
     || true && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Install cloudflare-warp supplied from local file
@@ -573,7 +568,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     # We remove cosmic-store and replace it with gnome-software for better functionality
     rpm-ostree remove \
     cosmic-store || true && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Install Gamescope, ROCM, and Waydroid on non-Nvidia images
@@ -589,7 +584,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     cage \
     wlr-randr && \
     sed -i~ -E 's/=.\$\(command -v (nft|ip6?tables-legacy).*/=/g' /usr/lib/waydroid/data/scripts/waydroid-net.sh && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Homebrew
@@ -603,7 +598,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     chmod +x /tmp/brew-install && \
     /tmp/brew-install && \
     tar --zstd -cvf /usr/share/homebrew.tar.zst /home/linuxbrew/.linuxbrew && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Install WinApps dependencies
@@ -614,7 +609,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     nmap-ncat \
     xfreerdp \
     || true && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/cleanup.sh && \
     ostree container commit
 
 # Finalize
@@ -674,8 +669,8 @@ RUN mkdir -p /var/tmp && chmod 1777 /var/tmp && \
     mkdir -p /etc/flatpak/remotes.d && \
     curl -Lo /etc/flatpak/remotes.d/flathub.flatpakrepo https://dl.flathub.org/repo/flathub.flatpakrepo && \
     # Finishing stuff
-    /usr/libexec/containerbuild/image-info && \
-    /usr/libexec/containerbuild/build-initramfs && \
-    /usr/libexec/containerbuild/cleanup.sh && \
+    /ctx/build/image-info && \
+    /ctx/build/build-initramfs && \
+    /ctx/build/cleanup.sh && \
     mkdir -p /var/tmp && chmod 1777 /var/tmp && \
     ostree container commit
