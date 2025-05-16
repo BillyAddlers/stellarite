@@ -191,6 +191,7 @@ jobs:
             --build-arg IMAGE_VENDOR=${{ github.repository_owner }} \
             --build-arg BASE_IMAGE_NAME=${{ env.BASE_IMAGE_NAME }} \
             --build-arg BASE_IMAGE_FLAVOR=${{ env.BASE_IMAGE_FLAVOR }} \
+            --build-arg FEDORA_MAJOR_VERSION=${{ env.FEDORA_MAJOR_VERSION }} \
             --build-arg FEDORA_VERSION=${{ env.FEDORA_MAJOR_VERSION }} \
             --build-arg KERNEL_FLAVOR=${{ env.KERNEL_FLAVOR }} \
             --build-arg KERNEL_VERSION=${{ env.KERNEL_VERSION }} \
