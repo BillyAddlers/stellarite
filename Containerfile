@@ -35,6 +35,7 @@ COPY system /
 
 # Update packages that commonly cause build issues
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     rpm-ostree override replace \
     --experimental \
     --from repo=fedora \
@@ -220,6 +221,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 
 # Setup Copr repos
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     if [[ "${FEDORA_MAJOR_VERSION}" == "rawhide" ]]; then \
     curl -Lo /etc/yum.repos.d/_copr_ryanabx-cosmic.repo \
     https://copr.fedorainfracloud.org/coprs/ryanabx/cosmic-epoch/repo/fedora-rawhide/ryanabx-cosmic-epoch-fedora-rawhide.repo \
@@ -262,7 +264,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 
 # Install Bazzite custom kernel
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
-    --mount=type=bind,from=kernel,src=/tmp/rpms,dst=/tmp/kernel-rpms \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     rpm-ostree cliwrap install-to-root / && \
     echo "Will install ${KERNEL_FLAVOR} kernel" && \
     /ctx/build/install-kernel-akmods && \
@@ -320,6 +322,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
     --mount=type=bind,from=akmods,src=/rpms,dst=/tmp/akmods-rpms \
     --mount=type=bind,from=akmods-extra,src=/rpms,dst=/tmp/akmods-extra-rpms \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     sed -i 's@enabled=0@enabled=1@g' /etc/yum.repos.d/_copr_ublue-os-akmods.repo && \
     rpm-ostree install \
     /tmp/akmods-rpms/kmods/*kvmfr*.rpm \
@@ -354,6 +357,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 # Install patched switcheroo control with proper discrete GPU support
 # Tempporary fix for GPU Encoding
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     rpm-ostree install \
     mesa-dri-drivers.i686 && \
     mkdir -p /tmp/mesa-fix64/dri && \
@@ -411,6 +415,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 
 # Remove unneeded packages
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     rpm-ostree override remove \
     ublue-os-update-services \
     firefox \
@@ -422,6 +427,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 
 # Install additional packages
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     rpm-ostree install \
     git \
     discover-overlay \
@@ -451,6 +457,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 # Install Steam plus supporting packages
 # Downgrade ibus to fix an issue with the Steam keyboard
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     rpm-ostree override replace \
     --experimental \
     --from repo=copr:copr.fedorainfracloud.org:kylegospo:bazzite \
@@ -497,6 +504,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 
 # Install Lutris and some additional packages
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     rpm-ostree install \
     lutris \
     umu-launcher \
@@ -536,6 +544,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 
 # Install Heroic and some additional packages
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     rpm-ostree install \
     heroic-games-launcher-bin \
     umu-launcher \
@@ -556,6 +565,7 @@ COPY vendor/cloudflare-warp /usr/share/ublue-os/packages
 
 # Install and configure Cosmic DE
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     rpm-ostree install \
     cosmic-desktop && \
     # Install gnome-software and gnome-disks
@@ -573,6 +583,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 
 # Install Gamescope, ROCM, and Waydroid on non-Nvidia images
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     rpm-ostree install \
     gamescope.x86_64 \
     gamescope-libs.i686 \
@@ -590,6 +601,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 # Homebrew
 # For some reason some devices don't get homebrew installed on their machine when rebasing.
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     echo "Will install Homebrew inside /home/linuxbrew" && \
     touch /.dockerenv && \
     mkdir -p /var/home && \
@@ -603,6 +615,7 @@ RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
 
 # Install WinApps dependencies
 RUN --mount=type=cache,dst=/var/cache/rpm-ostree \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
     rpm-ostree install \
     podman-compose \
     dialog \
