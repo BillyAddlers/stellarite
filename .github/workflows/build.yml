@@ -13,10 +13,7 @@ on:
       - "**.md"
       - "**.txt"
       - "artifacthub-repo.yml"
-      - "installer/**"
-      - "repo_files/**"
-      - "post_install_files/**"
-      - "docs/**"
+      - "assets/**"
       - ".github/workflows/build_iso.yml"
   workflow_dispatch:
 
