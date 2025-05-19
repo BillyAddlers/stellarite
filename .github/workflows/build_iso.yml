@@ -97,7 +97,7 @@ jobs:
           echo "FLATPAK_REFS_DIR=${FLATPAK_REFS_DIR}" >> $GITHUB_OUTPUT
 
       - name: Build ISOs
-        uses: jasonn3/build-container-installer@v1.2.4
+        uses: jasonn3/build-container-installer@v1.3.0
         id: build
         with:
           iso_name: ${{ env.IMAGE_NAME }}-${{ env.FEDORA_VERSION }}.iso
